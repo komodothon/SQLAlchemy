@@ -32,5 +32,5 @@ SQLAlchemy practice - to define a table structure and interact with a SQLite dat
 6. **Multiple tables and relationships**:
    - [x] single model / table
    - [x] multiple model. one to many relationship
-   - [ ] multiple model. many to many relationship
+   - [x] multiple model. many to many relationship
 
