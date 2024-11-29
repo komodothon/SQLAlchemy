@@ -1,10 +1,12 @@
 # imports
 
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table, func
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from random import randint, choice, sample
+
+DATABASE = 'sqlite:///instance/courses.db'
 
 # SQLAlchemy Many-To-Many
-
 Base = declarative_base()
 
 # Association table
@@ -34,33 +36,115 @@ class Course(Base):
 
     id = Column(Integer, primary_key=True)
     title = Column(String, nullable=False)
-    details = Column(String, nullable=False)
+    detail = Column(String, nullable=False)
 
     # relationship
     students = relationship("Student", secondary=student_course, back_populates="courses")
     
+    def __repr__(self):
+        return f"<Course(id={self.id}, title={self.title})"
 
-engine = create_engine('sqlite:///courses.db')
-Base.metadata.create_all(engine)
+def main():
+    engine = create_engine(DATABASE)
+    Base.metadata.create_all(engine)
 
-Session = sessionmaker(bind=engine)
-session = Session()
+    Session = sessionmaker(bind=engine)
+    session = Session()
 
-stud1 = Student(name="alice", email="alice@sample.com")
-stud2 = Student(name="charl", email="charl@sample.com")
-stud3 = Student(name="dory", email="dory@sample.com")
-stud4 = Student(name="emma", email="emma@sample.com")
+    # add_sample_students(session)
+    # add_sample_courses(session)
+    # add_sample_enrollments(session)
 
-course1 = Course(title="History 101", details="history")
-course2 = Course(title="Maths 101", details="maths")
+    students_in_course(session, 'physics101')
+    course_enrollment_counts(session)
+    enroll_students_dynamically(session, max_course_count=2)
+    withdraw_from_course(session, student_name = 'Hazel', course_title = 'finance101')
 
-course2.students.extend([stud1, stud4])
-course1.students.extend([stud2, stud3, stud4])
+    session.commit()
+    session.close()
 
-session.add_all([stud1, stud2, stud3, stud4])
-session.commit()
+def add_sample_students(session):
+    name_list = ['Elijah', 'Theodore', 'Harper', 'Henry', 'Oliver', 'Barbara', 
+                    'Liam', 'Evelyn', 'Amelia', 'Isabella', 'Mia', 'James', 'Noah', 
+                    'Jennifer', 'Hazel', 'Luna'
+    ]
 
-session.add_all([course1, course2])
-session.commit()
+    for name in name_list:
+        email = f"{name}@sample.com"
 
-session.close()
+        student = Student(name=name, email=email)
+        session.add(student)
+
+def add_sample_courses(session):
+    titles = ['maths101', 'physics101', 'geography101', 'chemistry101', 'finance101', 'biology101']
+
+    for title in titles:
+        detail = f"{title} course details"
+
+        course = Course(title=title, detail=detail)
+
+        session.add(course)
+
+
+def add_sample_enrollments(session):
+    students = session.query(Student).all()
+    courses = session.query(Course).all()  
+    
+    for student in students:
+        course_count = choice([1,2,3,4])
+        selected_courses = sample(courses, k=course_count)
+
+        for course in selected_courses:
+            if course not in student.courses:
+                student.courses.append(course)
+
+
+def students_in_course(session, course_title):
+    course = session.query(Course).filter(Course.title==course_title).first()
+    
+    if course:
+        enrolled_students = [student.name for student in course.students]
+        print(f"{course.title}: {enrolled_students}")
+    else:
+        print(f"No course with title {course_title} found.")
+
+
+def course_enrollment_counts(session):
+    counts = (session.query(Course.title, func.count(student_course.c.course_id))
+              .join(student_course, Course.id == student_course.c.course_id)
+              .group_by(Course.title)
+              .all()              
+    )
+
+    # print(counts)
+    for title, count in counts:
+        print(f"{title}: {count}")
+
+def enroll_students_dynamically(session, max_course_count):
+    students = session.query(Student).all()
+    courses = session.query(Course).all()
+
+    for student in students:
+        if len(student.courses) <= max_course_count:
+            remaining_courses = [course for course in courses if course not in student.courses]
+
+            if remaining_courses:
+                new_course = choice(remaining_courses)
+                student.courses.append(new_course)
+                print(f"{student.name} enrolled in {new_course.title}")
+
+def withdraw_from_course(session, student_name, course_title):
+    student = session.query(Student).filter(Student.name==student_name).first()
+    course = session.query(Course).filter(Course.title==course_title).first()
+
+    if student and course and course in student.courses:
+        student.courses.remove(course)
+        print(f"{student.name} withdrew from {course.title}")
+    else:
+        print("Invalid student or course detail")
+
+
+
+if __name__ == "__main__":
+    main()
+
