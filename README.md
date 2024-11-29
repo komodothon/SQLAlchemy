@@ -8,6 +8,12 @@ Many-to-Many
 - Implement a many-to-many association table (`student_course`).
 - Populate the database with example data and link students to courses.
 
+- Advanced Filtering: Query students enrolled in a specific course.
+- Aggregations: Count the number of students in each course.
+- Dynamic Enrollment: Enroll students based on certain criteria (e.g., students with fewer than X courses).
+- Deleting Relationships: Allow un-enrolling a student from a course.
+- Custom Queries: Write reusable functions to retrieve data efficiently.
+
 ## Key Components
 
 1. **Base Class**:
@@ -31,13 +37,13 @@ Many-to-Many
      - Columns:
        - [x] `id`: Integer, primary key.
        - [x] `title`: String.
-       - [x] `details`: String.
+       - [x] `detail`: String.
 
        - [x] relationship for many-to-many association.
 
 
 3. **Database Engine and Table Creation**:
-   - [x] `engine = create_engine('sqlite:///courses.db')`: Connection to database (`courses.db`).
+   - [x] `engine = create_engine('sqlite:///instance/courses.db')`: Connection to database (`courses.db`).
    - [x] `Base.metadata.create_all(engine)`: Creates the tables if they don't already exist.
    - [x] `Association table`: foreign keys relating student to a course for each course registration
 
